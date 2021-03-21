@@ -9,9 +9,9 @@ var count : int = 1;
 func _on_BuyBtn_pressed():
 	count+=1
 	var stat = ElfStats.get_stat(STAT_NAME)
-	var default : float = stat.default_value
+	var default : float = stat.base_value
 	var v: float = float(vitality_modifier) * float(default) * float(count)
-	stat.value = ceil(v)
+	stat.set_base_value(ceil(v))
 	
 	._on_BuyBtn_pressed()
 

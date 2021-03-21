@@ -63,7 +63,7 @@ func spawn_arrow():
 	arrow.global_position = fire_point.global_position
 	arrow.gravity = arrow_gravity
 	arrow.velocity = arrow_velocity
-	arrow.damage = ElfStats.get_stat_value("bows_knowledge")
+	arrow.damage = ElfStats.get_stat_modified_value("bows_knowledge")
 	
 func arrow_reloaded():
 	animation_player.play("ElfWalkAnimation")
@@ -88,7 +88,7 @@ func update_hp_label():
 	hp_label.text = str(stepify(hp,0.01))
 
 func reset_to_base():
-	hp = ElfStats.get_stat_value("vitality")
+	hp = ElfStats.get_stat_modified_value("vitality")
 	hp_bar.max_value = hp
 	hp_bar.value = hp
 	update_hp_label()
@@ -102,7 +102,7 @@ func add_hp(additional_hp):
 	set_current_hp(min(hp + additional_hp, hp_bar.max_value))
 	
 func _on_vitality_change(vitality_stat):
-	hp_bar.max_value = vitality_stat.value
+	hp_bar.max_value = vitality_stat.get_modified_value()
 	
 func save():
 	var save_dict = {

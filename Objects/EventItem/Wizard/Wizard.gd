@@ -11,9 +11,8 @@ func get_reward():
 	ElfStats.damage_multiplier *= 4.0
 	
 	var damage_stat = ElfStats.get_stat("bows_knowledge")
-	damage_stat.set_default_value(damage_stat.default_value * ElfStats.damage_multiplier)
-	default_damage = damage_stat.default_value * (ElfStats.damage_multiplier/ElfStats.damage_multiplier / 4.0)
-	damage_stat.calculate_changed_value()
+	default_damage = damage_stat.base_value
+	damage_stat.set_base_value(damage_stat.base_value * ElfStats.damage_multiplier)
 	
 	delayed_reset(BONUS_TIME)
 
@@ -25,8 +24,7 @@ func _on_timer_timeout():
 	ElfStats.damage_multiplier = default_damage_multiplier
 	
 	var damage_stat = ElfStats.get_stat("bows_knowledge")
-	damage_stat.set_default_value(default_damage)
-	damage_stat.calculate_changed_value()
+	damage_stat.set_base_value(default_damage)
 	
 	queue_free()
 	

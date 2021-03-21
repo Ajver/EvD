@@ -7,8 +7,8 @@ export(String) var name
 # Should be ItemType
 export(Resource) var quality
 
-# Should be array of StatChangers
-export(Array, Resource) var stat_changers
+# Should be array of StatModifiers
+export(Array, Resource) var stat_modifiers
 
 export(float) var price
 
@@ -29,7 +29,7 @@ func setup():
 func reset() -> void:
 	setup()
 	quality = QUALITY[0]
-	stat_changers.clear()
+	stat_modifiers.clear()
 	price = 1
 	
 func fill_quality_array() -> void:
@@ -46,19 +46,17 @@ func generate_random() -> void:
 		fill_quality_array()
 		
 	quality = get_random_element(QUALITY).duplicate()
-	stat_changers.clear()
+	stat_modifiers.clear()
 	
 	price = rand_range(1, 3) 
 	
 	var possible_stat_names := get_possible_stat_names_array()
 	
-	var no_changers = randi()%3 + 1
-	for i in range(no_changers):
-		var changer = StatChanger.new()
-		changer.stat_name = pop_random_element(possible_stat_names)
-		changer.item_name = name
-		changer.generate_random()
-		stat_changers.push_back(changer)
+	var no_modifiers = randi()%3 + 1
+	for i in range(no_modifiers):
+		var modifier = StatModifier.new(name, pop_random_element(possible_stat_names))
+		modifier.generate_random()
+		stat_modifiers.push_back(modifier)
 	
 func get_random_element(from:Array):
 	return from[randi() % from.size()]
@@ -78,26 +76,24 @@ func get_possible_stat_names_array() -> Array:
 	
 func save():
 	var save_dict = {
-		_changers = {}
+		_modifiers = {}
 	}
 	
 	var i : int = 0
-	for c in stat_changers:
-		save_dict["_changers"][str("changer", i)] = c.save()
+	for c in stat_modifiers:
+		save_dict["_modifiers"][str("modifier", i)] = c.save()
 		i += 1
 	
 	return save_dict
 	
 func load_data(data):
-	var changers = data["_changers"]
+	var modifiers = data["_modifiers"]
 	
-	if not changers:
+	if not modifiers:
 		return
 		
-	for key in changers:
-		var changer_data = changers[key] 
-		var changer = StatChanger.new()
-		changer.stat_name = changer_data["_stat_name"]
-		changer.item_name = name
-		changer.load_data(changer_data)
-		stat_changers.push_back(changer)
+	for key in modifiers:
+		var modifier_data = modifiers[key]
+		var modifier = StatModifier.new(name, modifier_data["_stat_name"])
+		modifier.load_data(modifier_data)
+		stat_modifiers.push_back(modifier)

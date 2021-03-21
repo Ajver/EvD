@@ -73,6 +73,5 @@ margin_bottom = 154.0
 [node name="ExitBtn" parent="ShopContainer/CenterContainer" index="0"]
 margin_left = 123.0
 margin_right = 235.0
-button_label = "Wróć"
 
 [editable path="ShopContainer"]

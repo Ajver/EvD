@@ -13,8 +13,8 @@ func create_stat_panel():
 		s.connect("value_changed", self, "update_stat_value")
 		row.name = s.name
 		row.find_node("Name").text = s.visible_name
-		row.find_node("Value").value = stepify(s.value, 0.01) / s.max_value
+		row.find_node("Value").value = stepify(s.get_modified_value(), 0.01) / s.max_value
 		panel.add_child(row)
 
 func update_stat_value(stat):
-	panel.get_node(stat.name + "/Container/Value").value = stepify(stat.value, 0.01) / stat.max_value
+	panel.get_node(stat.name + "/Container/Value").value = stepify(stat.get_modified_value(), 0.01) / stat.max_value

@@ -101,7 +101,7 @@ func _prepare_attack_animation():
 	_play_attack_animation()
 
 func on_arrow_hit(arrow):
-	if randf() < ElfStats.get_stat_value("critical_shot"):
+	if randf() < ElfStats.get_stat_modified_value("critical_shot"):
 		arrow.damage *= 2
 	
 	hp -= arrow.damage

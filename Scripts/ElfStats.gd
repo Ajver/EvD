@@ -1,134 +1,12 @@
 extends Node
 
-class Stat:
-	signal value_changed(me)
-	
-	var name : String
-	var default_value : float = 0
-	var value : float = 0 setget set_value, get_value
-	var changed_value : float = value
-	var changers : Array = []
-	
-	# Used to represent max value on progress bar, just visual
-	var max_value : float = 100
-	var visible_name : String = "STAT"
-	
-	func _init(n: String, dv: float = 0, max_v: float = 100, visible_n: String = "STAT", v: float = 0):
-		name = n
-		max_value = max_v
-		visible_name = visible_n
-		setup(dv, v)
-	
-	func setup(dv:float, v:float):
-		default_value = dv
-		if v:
-			set_value(v)
-		else:
-			set_value(dv)
-		emit_signal("value_changed", self)
-		
-	func set_value(v:float) -> void:
-		value = v
-		calculate_changed_value()
-		
-	func get_value() -> float:
-		return changed_value
-		
-	func get_value_replaced_item(item) -> float:
-		var re_changed_value = value
-		
-		for changer in changers:
-			if changer.item_name != item.name:
-				re_changed_value = changer.get_multiplayed_value(re_changed_value)
-				
-		for changer in item.stat_changers:
-			if changer.stat_name == name:
-				re_changed_value = changer.get_multiplayed_value(re_changed_value)
-		
-		for changer in changers:
-			if changer.item_name != item.name:
-				re_changed_value = changer.get_added_value(re_changed_value)
-				
-		for changer in item.stat_changers:
-			if changer.stat_name == name:
-				re_changed_value = changer.get_added_value(re_changed_value)
-			
-		return max(re_changed_value, 0)
-		
-	func get_changed_value_with_changer(changer) -> float:
-		var temp_changed_value = value
-		
-		temp_changed_value = changer.get_multiplayed_value(temp_changed_value)
-		for c in changers:
-			temp_changed_value = c.get_multiplayed_value(temp_changed_value)
-		
-		temp_changed_value = changer.get_added_value(temp_changed_value)
-		for c in changers:
-			temp_changed_value = c.get_added_value(temp_changed_value)
-			
-		return max(temp_changed_value, 0)
-	
-	func get_unchanged_value() -> float:
-		return value
-	
-	func reset() -> void:
-		value = default_value
-		changed_value = value
-		changers.clear()
-		emit_signal("value_changed", self)
-		
-	func set_default_value(dv:float) -> void:
-		if default_value == value:
-			set_value(dv)
-			
-		default_value = dv
-	
-	func named(n:String) -> bool:
-		return name == n
-		
-	func is_changed_by_item(item_name) -> bool:
-		for c in changers:
-			if c.item_name == item_name:
-				return true
-		
-		return false
-		
-	func add_changer(changer:Resource) -> void:
-		changers.push_back(changer)
-		calculate_changed_value()
-		
-	func remove_changer(changer:Resource) -> void:
-		changers.erase(changer)
-		calculate_changed_value()
-		
-	func remove_changer_by_item_name(item_name) -> void:
-		for i in range(changers.size()-1, -1, -1):
-			if changers[i].item_name == item_name:
-				remove_changer(changers[i])
-		
-	func calculate_changed_value():
-		changed_value = value
-		
-		for c in changers:
-			changed_value = c.get_multiplayed_value(changed_value)
-		
-		for c in changers:
-			changed_value = c.get_added_value(changed_value)
-			
-		changed_value = max(changed_value, 0)
-		
-		emit_signal("value_changed", self)
-
-##################################################
-# warning-ignore: unused_class_variable
 var damage_multiplier: float = 1.0 setget set_damage_multiplier
-# warning-ignore: unused_class_variable
 var health_multiplier: float = 1.0 setget set_health_multiplier
 
 var _stats = [
-	Stat.new("bows_knowledge", 1, 10, "Znajomość Łuków"),
-	Stat.new("vitality", 13, 250, "Witalność"),
-	Stat.new("critical_shot", 0.1, 1, "Uderzenie Krytyczne")
+	Stat.new("bows_knowledge", "Znajomość Łuków", 1, 10),
+	Stat.new("vitality", "Witalność", 13, 250),
+	Stat.new("critical_shot", "Uderzenie Krytyczne", 0.1, 1)
 ]
 
 var _items = {}
@@ -138,22 +16,20 @@ func _ready():
 
 func set_damage_multiplier(value):
 	damage_multiplier = value
-	add_revival_changer("bows_knowledge", value)
+	add_revival_modifier("bows_knowledge", value)
 
 func set_health_multiplier(value):
 	health_multiplier = value
-	add_revival_changer("vitality", value)
+	add_revival_modifier("vitality", value)
 
-func add_revival_changer(stat_name, value):
-	var damage_stat = get_stat(stat_name)
-	var changer = StatChanger.new()
+func add_revival_modifier(stat_name, value):
+	var stat = get_stat(stat_name)
+	var modifier = StatModifier.new("revival_" + stat_name, stat_name)
 
-	changer.stat_name = stat_name
-	changer.multiply_stat = value
-	changer.item_name = "revival_" + stat_name
+	modifier.multiply_modifier = value
 	
-	damage_stat.remove_changer_by_item_name(changer.item_name)
-	damage_stat.add_changer(changer)
+	stat.remove_modifier_by_item_name(modifier.item_name)
+	stat.add_modifier(modifier)
 
 static func create_default_items() -> void:
 	ElfStats._items = {
@@ -178,52 +54,56 @@ static func restore_to_default() -> void:
 		s.reset()
 		
 	if ElfStats.damage_multiplier != 1.0:
-		ElfStats.add_revival_changer("bows_knowledge", ElfStats.damage_multiplier)
+		ElfStats.add_revival_modifier("bows_knowledge", ElfStats.damage_multiplier)
 		
 	if ElfStats.health_multiplier != 1.0:
-		ElfStats.add_revival_changer("vitality", ElfStats.health_multiplier)
+		ElfStats.add_revival_modifier("vitality", ElfStats.health_multiplier)
 		
 static func get_stats() -> Array:
 	return ElfStats._stats
 		
 static func get_stat(stat_name:String) -> Stat:
 	for s in ElfStats._stats:
-		if s.named(stat_name):
+		if s.is_named(stat_name):
 			return s
 	
 	printerr("nonexist stat with name: \"" + stat_name + "\"")
 	return null
 	
-static func get_stat_value(stat_name:String) -> float:
+static func get_stat_modified_value(stat_name:String) -> float:
 	var stat = get_stat(stat_name)
 	
 	if stat:
-		return stat.value
+		return stat.get_modified_value()
 	
 	return 0.0
 	
-static func get_stat_unchanged_value(stat_name:String) -> float:
+static func get_stat_base_value(stat_name:String) -> float:
 	var stat = get_stat(stat_name)
 	
 	if stat:
-		return stat.get_unchanged_value()
+		return stat.get_base_value()
 	
 	return 0.0
 
-# requires optimisation
 static func add_item(item) -> void:
 	ElfStats._items[item.name] = item
 	
 	for s in ElfStats._stats:
-		# Remove every changer from old item
-		for i in range(s.changers.size()-1, -1, -1):
-			if s.changers[i].item_name == item.name:
-				s.remove_changer(s.changers[i])
+		_remove_old_item_modifier(s, item)
 		
-		# Add new changers 
-		for c in item.stat_changers:
-			if s.named(c.stat_name):
-				s.add_changer(c)
+		_add_new_item_modifier(s, item)
+				
+static func _remove_old_item_modifier(stat: Resource, item: Resource) -> void:
+	for i in range(0, stat.modifiers.size(), 1):
+		if stat.modifiers[i].item_name == item.name:
+			stat.remove_modifier(stat.modifiers[i])
+			return
+			
+static func _add_new_item_modifier(stat: Resource, item: Resource) -> void:
+	for modifier in item.stat_modifiers:
+		if stat.is_named(modifier.stat_name):
+			stat.add_changer(modifier)
 	
 static func save():
 	var save_dict = {
@@ -237,8 +117,8 @@ static func save():
 	
 	for s in ElfStats._stats:
 		save_dict["_elf_stats"]["_stats"][s.name] = {
-			_default_value = s.default_value,
-			_value = s.get_unchanged_value()
+			_base_value = s.get_base_value(),
+			_modified_value = s.get_modified_value()
 		}
 		
 	for key in ElfStats._items:
@@ -253,11 +133,12 @@ static func load_data(data):
 	for key in stats:
 		var new_stat = stats[key]
 		var stat = get_stat(key)
-		stat.setup(new_stat["_default_value"], new_stat["_value"])
+		
+		stat.set_base_value(new_stat["_base_value"])
+		stat.set_modified_value(new_stat["_modified_value"])
 		
 	for key in items:
 		ElfStats._items[key].load_data(items[key])
-		add_item(ElfStats._items[key])
 		
 	ElfStats.set_damage_multiplier(data["_damage_multiplier"])
 	ElfStats.set_health_multiplier(data["_health_multiplier"])
